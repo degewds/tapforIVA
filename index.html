@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TapCoin - Telegram Mini App</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a1f25, #0d1117);
+            color: #fff;
+            min-height: 100vh;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+        
+        .container {
+            max-width: 480px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        
+        header {
+            text-align: center;
+            padding: 20px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            margin-bottom: 20px;
+            position: relative;
+        }
+        
+        h1 {
+            font-size: 2.2rem;
+            background: linear-gradient(45deg, #ffd166, #ff9a3c);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            margin-bottom: 5px;
+        }
+        
+        .subtitle {
+            color: #8b949e;
+            font-size: 1rem;
+        }
+        
+        .stats-container {
+            background: rgba(30, 35, 45, 0.7);
+            border-radius: 16px;
+            padding: 15px;
+            margin: 15px 0;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        
+        .stat-card {
+            background: rgba(22, 27, 34, 0.8);
+            border-radius: 12px;
+            padding: 15px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .stat-label {
+            font-size: 0.9rem;
+            color: #8b949e;
+            margin-bottom: 5px;
+        }
+        
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #ffd166;
+        }
+        
+        .tap-area {
+            background: linear-gradient(135deg, #1e2a3a, #111a26);
+            border-radius: 20px;
+            height: 300px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 20px 0;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: transform 0.1s;
+        }
+        
+        .tap-area:active {
+            transform: scale(0.98);
+        }
+        
+        .coin {
+            width: 140px;
+            height: 140px;
+            background: radial-gradient(circle at 30% 30%, #ffd166, #ff9a3c);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 8px 25px rgba(255, 154, 60, 0.4);
+            position: relative;
+            animation: pulse 2s infinite;
+            user-select: none;
+        }
+        
+        .coin:before {
+            content: "";
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: radial-gradient(circle at 50% 120%, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0) 70%);
+        }
+        
+        .coin-inner {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #ffb74d, #ff9800);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            font-weight: bold;
+            color: #5d4037;
+            box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.3);
+            text-shadow: 0 1px 2px rgba(255, 255, 255, 0.5);
+        }
+        
+        .tap-effect {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.5);
+            pointer-events: none;
+            animation: tapEffect 0.6s forwards;
+        }
+        
+        .upgrades {
+            background: rgba(30, 35, 45, 0.7);
+            border-radius: 16px;
+            padding: 20px;
+            margin-top: 20px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+        }
+        
+        .section-title {
+            font-size: 1.4rem;
+            margin-bottom: 15px;
+            color: #ffd166;
+            text-align: center;
+        }
+        
+        .upgrade {
+            background: rgba(22, 27, 34, 0.8);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .upgrade:hover {
+            transform: translateY(-3px);
+            background: rgba(30, 36, 44, 0.9);
+        }
+        
+        .upgrade-icon {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, #4a90e2, #5d69be);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            font-size: 1.5rem;
+        }
+        
+        .upgrade-details {
+            flex: 1;
+        }
+        
+        .upgrade-name {
+            font-weight: bold;
+            font-size: 1.1rem;
+            margin-bottom: 5px;
+        }
+        
+        .upgrade-description {
+            font-size: 0.85rem;
+            color: #8b949e;
+            margin-bottom: 5px;
+        }
+        
+        .upgrade-cost {
+            color: #ffd166;
+            font-weight: bold;
+        }
+        
+        .action-button {
+            background: linear-gradient(45deg, #4a90e2, #5d69be);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 15px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 15px;
+            width: 100%;
+            transition: all 0.2s;
+            box-shadow: 0 4px 15px rgba(77, 105, 225, 0.3);
+        }
+        
+        .action-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(77, 105, 225, 0.5);
+        }
+        
+        .action-button:active {
+            transform: translateY(1px);
+        }
+        
+        footer {
+            text-align: center;
+            padding: 20px 0;
+            color: #8b949e;
+            font-size: 0.9rem;
+            margin-top: auto;
+        }
+        
+        .coins-per-second {
+            text-align: center;
+            margin: 15px 0;
+            font-size: 1.1rem;
+            color: #8b949e;
+        }
+        
+        .coins-per-second span {
+            color: #ffd166;
+            font-weight: bold;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        
+        @keyframes tapEffect {
+            0% { opacity: 1; transform: scale(0.5); }
+            100% { opacity: 0; transform: scale(2); }
+        }
+        
+        .notification {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(30, 35, 45, 0.95);
+            color: #ffd166;
+            padding: 12px 20px;
+            border-radius: 12px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.4);
+            z-index: 1000;
+            display: none;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+        }
+        
+        /* Адаптивность */
+        @media (max-width: 500px) {
+            .container {
+                padding: 10px;
+            }
+            
+            h1 {
+                font-size: 1.8rem;
+            }
+            
+            .tap-area {
+                height: 250px;
+            }
+            
+            .coin {
+                width: 120px;
+                height: 120px;
+            }
+            
+            .coin-inner {
+                width: 85px;
+                height: 85px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>TapCoin</h1>
+            <div class="subtitle">Тапай и зарабатывай монеты!</div>
+        </header>
+        
+        <div class="stats-container">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-label">Ваши монеты</div>
+                    <div class="stat-value" id="coins">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Монет за тап</div>
+                    <div class="stat-value" id="coins-per-tap">1</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="coins-per-second">
+            Автоматический заработок: <span id="coins-per-sec">0</span> монет/сек
+        </div>
+        
+        <div class="tap-area" id="tapArea">
+            <div class="coin">
+                <div class="coin-inner">$</div>
+            </div>
+        </div>
+        
+        <div class="upgrades">
+            <h2 class="section-title">Улучшения</h2>
+            
+            <div class="upgrade" id="upgrade1">
+                <div class="upgrade-icon">🔨</div>
+                <div class="upgrade-details">
+                    <div class="upgrade-name">Мощный тап</div>
+                    <div class="upgrade-description">Увеличивает доход за тап</div>
+                    <div class="upgrade-cost" id="upgrade1-cost">Стоимость: 50</div>
+                </div>
+            </div>
+            
+            <div class="upgrade" id="upgrade2">
+                <div class="upgrade-icon">⚡</div>
+                <div class="upgrade-details">
+                    <div class="upgrade-name">Автокликер</div>
+                    <div class="upgrade-description">Автоматически зарабатывает монеты</div>
+                    <div class="upgrade-cost" id="upgrade2-cost">Стоимость: 200</div>
+                </div>
+            </div>
+            
+            <div class="upgrade" id="upgrade3">
+                <div class="upgrade-icon">🏆</div>
+                <div class="upgrade-details">
+                    <div class="upgrade-name">Золотая перчатка</div>
+                    <div class="upgrade-description">Удваивает доход за тап</div>
+                    <div class="upgrade-cost" id="upgrade3-cost">Стоимость: 1000</div>
+                </div>
+            </div>
+        </div>
+        
+        <button class="action-button" id="claimButton">Забрать монеты</button>
+        
+        <footer>
+            TapCoin © 2023 | Игра вдохновлена Notcoin
+        </footer>
+        
+        <div class="notification" id="notification"></div>
+    </div>
+
+    <script>
+        // Инициализация состояния игры
+        const gameState = {
+            coins: 0,
+            coinsPerTap: 1,
+            coinsPerSecond: 0,
+            upgrades: {
+                tapPower: {
+                    level: 0,
+                    cost: 50,
+                    costMultiplier: 1.5,
+                    effect: 1
+                },
+                autoClicker: {
+                    level: 0,
+                    cost: 200,
+                    costMultiplier: 2,
+                    effect: 0.5
+                },
+                goldenGlove: {
+                    level: 0,
+                    cost: 1000,
+                    costMultiplier: 3,
+                    effect: 2,
+                    purchased: false
+                }
+            }
+        };
+        
+        // Инициализация Telegram Web App
+        const tg = window.Telegram.WebApp;
+        
+        // Элементы интерфейса
+        const coinsElement = document.getElementById('coins');
+        const coinsPerTapElement = document.getElementById('coins-per-tap');
+        const coinsPerSecElement = document.getElementById('coins-per-sec');
+        const tapArea = document.getElementById('tapArea');
+        const upgrade1 = document.getElementById('upgrade1');
+        const upgrade2 = document.getElementById('upgrade2');
+        const upgrade3 = document.getElementById('upgrade3');
+        const upgrade1Cost = document.getElementById('upgrade1-cost');
+        const upgrade2Cost = document.getElementById('upgrade2-cost');
+        const upgrade3Cost = document.getElementById('upgrade3-cost');
+        const claimButton = document.getElementById('claimButton');
+        const notification = document.getElementById('notification');
+        
+        // Загрузка состояния игры
+        function loadGame() {
+            const savedGame = localStorage.getItem('tapCoinGame');
+            if (savedGame) {
+                Object.assign(gameState, JSON.parse(savedGame));
+                updateUI();
+            }
+            
+            // Инициализация Telegram
+            tg.ready();
+            tg.expand();
+        }
+        
+        // Сохранение состояния игры
+        function saveGame() {
+            localStorage.setItem('tapCoinGame', JSON.stringify(gameState));
+        }
+        
+        // Обновление интерфейса
+        function updateUI() {
+            coinsElement.textContent = Math.floor(gameState.coins);
+            coinsPerTapElement.textContent = gameState.coinsPerTap;
+            coinsPerSecElement.textContent = gameState.coinsPerSecond.toFixed(1);
+            
+            // Обновление стоимости улучшений
+            upgrade1Cost.textContent = `Стоимость: ${Math.ceil(gameState.upgrades.tapPower.cost)}`;
+            upgrade2Cost.textContent = `Стоимость: ${Math.ceil(gameState.upgrades.autoClicker.cost)}`;
+            upgrade3Cost.textContent = `Стоимость: ${Math.ceil(gameState.upgrades.goldenGlove.cost)}`;
+            
+            // Блокировка улучшений, если недостаточно монет
+            upgrade1.style.opacity = gameState.coins >= gameState.upgrades.tapPower.cost ? 1 : 0.6;
+            upgrade2.style.opacity = gameState.coins >= gameState.upgrades.autoClicker.cost ? 1 : 0.6;
+            upgrade3.style.opacity = gameState.coins >= gameState.upgrades.goldenGlove.cost ? 1 : 0.6;
+        }
+        
+        // Обработка тапа
+        function handleTap(event) {
+            // Добавление эффекта тапа
+            const tapEffect = document.createElement('div');
+            tapEffect.className = 'tap-effect';
+            tapEffect.style.left = (event.clientX - 25) + 'px';
+            tapEffect.style.top = (event.clientY - 25) + 'px';
+            document.body.appendChild(tapEffect);
+            
+            // Удаление эффекта после анимации
+            setTimeout(() => {
+                tapEffect.remove();
+            }, 600);
+            
+            // Добавление монет
+            gameState.coins += gameState.coinsPerTap;
+            
+            // Обновление интерфейса
+            updateUI();
+            saveGame();
+            
+            // Эффект монеты
+            animateCoin();
+        }
+        
+        // Анимация монеты при тапе
+        function animateCoin() {
+            const coin = document.querySelector('.coin');
+            coin.style.transform = 'scale(0.95)';
+            setTimeout(() => {
+                coin.style.transform = 'scale(1)';
+            }, 100);
+        }
+        
+        // Покупка улучшения
+        function buyUpgrade(upgradeKey) {
+            const upgrade = gameState.upgrades[upgradeKey];
+            
+            if (gameState.coins >= upgrade.cost) {
+                // Списание монет
+                gameState.coins -= upgrade.cost;
+                
+                // Применение улучшения
+                switch(upgradeKey) {
+                    case 'tapPower':
+                        gameState.coinsPerTap += upgrade.effect;
+                        upgrade.level++;
+                        upgrade.cost *= upgrade.costMultiplier;
+                        showNotification('Тап усилен! +1 монета за клик');
+                        break;
+                    case 'autoClicker':
+                        gameState.coinsPerSecond += upgrade.effect;
+                        upgrade.level++;
+                        upgrade.cost *= upgrade.costMultiplier;
+                        showNotification('Автокликер куплен! +0.5 монет/сек');
+                        break;
+                    case 'goldenGlove':
+                        if (!upgrade.purchased) {
+                            gameState.coinsPerTap *= upgrade.effect;
+                            upgrade.purchased = true;
+                            showNotification('Золотая перчатка! Доход за тап удвоен');
+                        }
+                        break;
+                }
+                
+                // Обновление интерфейса и сохранение
+                updateUI();
+                saveGame();
+            } else {
+                showNotification('Недостаточно монет!');
+            }
+        }
+        
+        // Показ уведомления
+        function showNotification(message) {
+            notification.textContent = message;
+            notification.style.display = 'block';
+            
+            setTimeout(() => {
+                notification.style.display = 'none';
+            }, 3000);
+        }
+        
+        // Функция автоматического заработка
+        function autoEarn() {
+            gameState.coins += gameState.coinsPerSecond / 10;
+            updateUI();
+            saveGame();
+        }
+        
+        // Обработка кнопки "Забрать монеты"
+        function claimCoins() {
+            showNotification('Монеты сохранены!');
+            // В реальном приложении здесь была бы интеграция с TON
+        }
+        
+        // Инициализация игры
+        function initGame() {
+            // Загрузка состояния
+            loadGame();
+            
+            // Настройка обработчиков событий
+            tapArea.addEventListener('click', handleTap);
+            
+            upgrade1.addEventListener('click', () => buyUpgrade('tapPower'));
+            upgrade2.addEventListener('click', () => buyUpgrade('autoClicker'));
+            upgrade3.addEventListener('click', () => buyUpgrade('goldenGlove'));
+            
+            claimButton.addEventListener('click', claimCoins);
+            
+            // Автоматический заработок каждые 0.1 секунды
+            setInterval(autoEarn, 100);
+            
+            // Обновление интерфейса
+            updateUI();
+        }
+        
+        // Запуск игры при загрузке страницы
+        window.addEventListener('DOMContentLoaded', initGame);
+    </script>
+</body>
+</html>
