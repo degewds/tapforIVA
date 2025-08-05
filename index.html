@@ -561,10 +561,22 @@
         }
         
         // Обработка кнопки "Забрать монеты"
-        function claimCoins() {
-            showNotification('Монеты сохранены!');
-            // В реальном приложении здесь была бы интеграция с TON
-        }
+       function claimCoins() {
+    if (window.Telegram && window.Telegram.WebApp) {
+        const tg = window.Telegram.WebApp;
+        
+        // Отправляем данные в бота
+        tg.sendData(JSON.stringify({
+            coins: Math.floor(gameState.coins),
+            userId: tg.initDataUnsafe.user?.id
+        }));
+        
+        // Закрываем Mini App
+        tg.close();
+    } else {
+        showNotification('Монеты сохранены локально!');
+    }
+}
         
         // Инициализация игры
         function initGame() {
