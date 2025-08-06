@@ -6,7 +6,6 @@
     <title>TapCoin Pro - Telegram Mini App</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        /* Общие стили */
         * {
             margin: 0;
             padding: 0;
@@ -146,6 +145,7 @@
             text-align: center;
             display: block;
             width: 100%;
+            margin-top: 10px;
         }
         
         .btn:hover {
@@ -475,6 +475,8 @@
             display: none;
             border: 1px solid rgba(255, 255, 255, 0.1);
             backdrop-filter: blur(10px);
+            max-width: 90%;
+            text-align: center;
         }
         
         /* Анимации */
@@ -715,6 +717,25 @@
         // Инициализация Telegram Web App
         const tg = window.Telegram.WebApp;
         
+        // Элементы интерфейса
+        const coinsElement = document.getElementById('coins');
+        const coinsPerTapElement = document.getElementById('coins-per-tap');
+        const coinsPerSecElement = document.getElementById('coins-per-sec');
+        const tapArea = document.getElementById('tapArea');
+        const upgrade1 = document.getElementById('upgrade1');
+        const upgrade2 = document.getElementById('upgrade2');
+        const upgrade3 = document.getElementById('upgrade3');
+        const upgrade4 = document.getElementById('upgrade4');
+        const upgrade1Cost = document.getElementById('upgrade1-cost');
+        const upgrade2Cost = document.getElementById('upgrade2-cost');
+        const upgrade3Cost = document.getElementById('upgrade3-cost');
+        const upgrade4Cost = document.getElementById('upgrade4-cost');
+        const claimButton = document.getElementById('claimButton');
+        const dailyBonusBtn = document.getElementById('dailyBonusBtn');
+        const dailyBonusBtnProfile = document.getElementById('dailyBonusBtnProfile');
+        const copyReferralBtn = document.getElementById('copyReferralBtn');
+        const notification = document.getElementById('notification');
+        
         // Навигация
         const navItems = document.querySelectorAll('.nav-item');
         const pages = document.querySelectorAll('.page');
@@ -741,6 +762,156 @@
             });
         });
         
+        // Загрузка состояния игры
+        function loadGame() {
+            const savedGame = localStorage.getItem('tapCoinGame');
+            if (savedGame) {
+                const parsed = JSON.parse(savedGame);
+                
+                // Сохраняем только нужные свойства
+                gameState.coins = parsed.coins || 0;
+                gameState.coinsPerTap = parsed.coinsPerTap || 1;
+                gameState.coinsPerSecond = parsed.coinsPerSecond || 0;
+                gameState.upgrades = parsed.upgrades || gameState.upgrades;
+                gameState.dailyBonuses = parsed.dailyBonuses || gameState.dailyBonuses;
+                gameState.referralCode = parsed.referralCode || gameState.referralCode;
+                gameState.referrals = parsed.referrals || [];
+                gameState.referralEarned = parsed.referralEarned || 0;
+                gameState.leaderboard = parsed.leaderboard || [];
+                
+                updateUI();
+            }
+            
+            // Инициализация Telegram
+            if (tg) {
+                tg.ready();
+                tg.expand();
+            }
+        }
+        
+        // Сохранение состояния игры
+        function saveGame() {
+            localStorage.setItem('tapCoinGame', JSON.stringify(gameState));
+        }
+        
+        // Обновление интерфейса
+        function updateUI() {
+            coinsElement.textContent = Math.floor(gameState.coins);
+            coinsPerTapElement.textContent = gameState.coinsPerTap;
+            coinsPerSecElement.textContent = gameState.coinsPerSecond.toFixed(1);
+            
+            // Обновление стоимости улучшений
+            upgrade1Cost.textContent = `Стоимость: ${Math.ceil(gameState.upgrades.tapPower.cost)}`;
+            upgrade2Cost.textContent = `Стоимость: ${Math.ceil(gameState.upgrades.autoClicker.cost)}`;
+            upgrade3Cost.textContent = `Стоимость: ${Math.ceil(gameState.upgrades.goldenGlove.cost)}`;
+            upgrade4Cost.textContent = `Стоимость: ${Math.ceil(gameState.upgrades.booster.cost)}`;
+            
+            // Блокировка улучшений, если недостаточно монет
+            upgrade1.style.opacity = gameState.coins >= gameState.upgrades.tapPower.cost ? 1 : 0.6;
+            upgrade2.style.opacity = gameState.coins >= gameState.upgrades.autoClicker.cost ? 1 : 0.6;
+            upgrade3.style.opacity = gameState.coins >= gameState.upgrades.goldenGlove.cost ? 1 : 0.6;
+            upgrade4.style.opacity = gameState.coins >= gameState.upgrades.booster.cost ? 1 : 0.6;
+            
+            // Обновление текста кнопки бонуса
+            dailyBonusBtn.textContent = `Ежедневный бонус (${gameState.dailyBonuses.streak || 0}/5)`;
+        }
+        
+        // Обработка тапа
+        function handleTap(event) {
+            // Добавление эффекта тапа
+            const tapEffect = document.createElement('div');
+            tapEffect.className = 'tap-effect';
+            tapEffect.style.left = (event.clientX - 25) + 'px';
+            tapEffect.style.top = (event.clientY - 25) + 'px';
+            document.body.appendChild(tapEffect);
+            
+            // Удаление эффекта после анимации
+            setTimeout(() => {
+                tapEffect.remove();
+            }, 600);
+            
+            // Добавление монет
+            gameState.coins += gameState.coinsPerTap;
+            
+            // Обновление интерфейса
+            updateUI();
+            saveGame();
+            
+            // Эффект монеты
+            animateCoin();
+        }
+        
+        // Анимация монеты при тапе
+        function animateCoin() {
+            const coin = document.querySelector('.coin');
+            coin.style.transform = 'scale(0.95)';
+            setTimeout(() => {
+                coin.style.transform = 'scale(1)';
+            }, 100);
+        }
+        
+        // Покупка улучшения
+        function buyUpgrade(upgradeKey) {
+            const upgrade = gameState.upgrades[upgradeKey];
+            
+            if (gameState.coins >= upgrade.cost) {
+                // Списание монет
+                gameState.coins -= upgrade.cost;
+                
+                // Применение улучшения
+                switch(upgradeKey) {
+                    case 'tapPower':
+                        gameState.coinsPerTap += upgrade.effect;
+                        upgrade.level++;
+                        upgrade.cost = Math.ceil(upgrade.cost * upgrade.costMultiplier);
+                        showNotification('Тап усилен! +1 монета за клик');
+                        break;
+                    case 'autoClicker':
+                        gameState.coinsPerSecond += upgrade.effect;
+                        upgrade.level++;
+                        upgrade.cost = Math.ceil(upgrade.cost * upgrade.costMultiplier);
+                        showNotification('Автокликер куплен! +0.5 монет/сек');
+                        break;
+                    case 'goldenGlove':
+                        if (!upgrade.purchased) {
+                            gameState.coinsPerTap *= upgrade.effect;
+                            upgrade.purchased = true;
+                            showNotification('Золотая перчатка! Доход за тап удвоен');
+                        }
+                        break;
+                    case 'booster':
+                        gameState.coinsPerSecond += gameState.coinsPerSecond * upgrade.effect;
+                        upgrade.level++;
+                        upgrade.cost = Math.ceil(upgrade.cost * upgrade.costMultiplier);
+                        showNotification('Бустер активирован! +20% к авто-заработку');
+                        break;
+                }
+                
+                // Обновление интерфейса и сохранение
+                updateUI();
+                saveGame();
+            } else {
+                showNotification('Недостаточно монет!');
+            }
+        }
+        
+        // Показ уведомления
+        function showNotification(message) {
+            notification.textContent = message;
+            notification.style.display = 'block';
+            
+            setTimeout(() => {
+                notification.style.display = 'none';
+            }, 3000);
+        }
+        
+        // Функция автоматического заработка
+        function autoEarn() {
+            gameState.coins += gameState.coinsPerSecond / 10;
+            updateUI();
+            saveGame();
+        }
+        
         // Обновление страницы профиля
         function updateProfilePage() {
             document.getElementById('profileCoins').textContent = `${Math.floor(gameState.coins)} монет`;
@@ -748,7 +919,12 @@
             document.getElementById('referralEarned').textContent = Math.floor(gameState.referralEarned);
             
             // Генерация реферальной ссылки
-            const referralLink = `https://t.me/${tg.initDataUnsafe.user?.username || 'your_bot'}?start=ref_${gameState.referralCode}`;
+            let referralLink = "https://t.me/your_bot?start=ref_";
+            if (gameState.referralCode) {
+                referralLink += gameState.referralCode;
+            } else {
+                referralLink += "ERROR";
+            }
             document.getElementById('referralLink').value = referralLink;
             
             // Обновление таймера бонуса
@@ -889,7 +1065,7 @@
         
         // Инициализация пользователя
         function initUser() {
-            if (tg.initDataUnsafe.user) {
+            if (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) {
                 gameState.userId = tg.initDataUnsafe.user.id;
                 gameState.userName = tg.initDataUnsafe.user.first_name || 'Игрок';
                 
@@ -904,15 +1080,70 @@
                 const startParam = tg.initDataUnsafe.start_param;
                 if (startParam && startParam.startsWith('ref_')) {
                     const referrerCode = startParam.substring(4);
-                    // В реальном приложении здесь бы мы сохранили реферера
                     showNotification(`Вы зашли по реферальной ссылке!`);
+                    
+                    // В реальном приложении здесь бы мы сохранили реферера
+                    // addReferral(referrerCode);
                 }
+            } else {
+                // Для локального тестирования
+                gameState.userId = Date.now();
+                gameState.userName = "Локальный Игрок";
+                gameState.referralCode = "LOCAL" + Math.floor(Math.random() * 1000);
             }
         }
         
-        // Остальной код игры (аналогичный предыдущей версии)...
-        // [Здесь должен быть код из предыдущей версии игры: loadGame, saveGame, updateUI, handleTap, buyUpgrade, etc.]
-        // Для краткости не дублируем, но в реальном файле он должен быть
+        // Копирование реферальной ссылки
+        function copyReferralLink() {
+            const referralLink = document.getElementById('referralLink');
+            referralLink.select();
+            document.execCommand('copy');
+            showNotification('Ссылка скопирована в буфер!');
+        }
+        
+        // Обработка кнопки "Забрать монеты"
+        function claimCoins() {
+            // Обновляем данные пользователя в таблице лидеров
+            updateLeaderboardData();
+            
+            if (window.Telegram && window.Telegram.WebApp) {
+                const tg = window.Telegram.WebApp;
+                
+                tg.sendData(JSON.stringify({
+                    coins: Math.floor(gameState.coins),
+                    userId: gameState.userId,
+                    userName: gameState.userName,
+                    referralCode: gameState.referralCode,
+                    referrals: gameState.referrals,
+                    referralEarned: gameState.referralEarned,
+                    upgrades: gameState.upgrades,
+                    dailyBonuses: gameState.dailyBonuses,
+                    leaderboard: gameState.leaderboard
+                }));
+                
+                tg.close();
+            } else {
+                showNotification('Монеты сохранены локально!');
+            }
+        }
+        
+        // Обновление данных в таблице лидеров
+        function updateLeaderboardData() {
+            // Обновляем данные пользователя в таблице лидеров
+            const userIndex = gameState.leaderboard.findIndex(u => u.userId === gameState.userId);
+            
+            if (userIndex !== -1) {
+                gameState.leaderboard[userIndex].coins = gameState.coins;
+            } else {
+                gameState.leaderboard.push({
+                    userId: gameState.userId,
+                    name: gameState.userName,
+                    coins: gameState.coins
+                });
+            }
+            
+            saveGame();
+        }
         
         // Инициализация игры
         function initGame() {
@@ -925,15 +1156,15 @@
             // Настройка обработчиков событий
             tapArea.addEventListener('click', handleTap);
             
-            document.getElementById('upgrade1').addEventListener('click', () => buyUpgrade('tapPower'));
-            document.getElementById('upgrade2').addEventListener('click', () => buyUpgrade('autoClicker'));
-            document.getElementById('upgrade3').addEventListener('click', () => buyUpgrade('goldenGlove'));
-            document.getElementById('upgrade4').addEventListener('click', () => buyUpgrade('booster'));
+            upgrade1.addEventListener('click', () => buyUpgrade('tapPower'));
+            upgrade2.addEventListener('click', () => buyUpgrade('autoClicker'));
+            upgrade3.addEventListener('click', () => buyUpgrade('goldenGlove'));
+            upgrade4.addEventListener('click', () => buyUpgrade('booster'));
             
-            document.getElementById('claimButton').addEventListener('click', claimCoins);
-            document.getElementById('dailyBonusBtn').addEventListener('click', claimDailyBonus);
-            document.getElementById('dailyBonusBtnProfile').addEventListener('click', claimDailyBonus);
-            document.getElementById('copyReferralBtn').addEventListener('click', copyReferralLink);
+            claimButton.addEventListener('click', claimCoins);
+            dailyBonusBtn.addEventListener('click', claimDailyBonus);
+            dailyBonusBtnProfile.addEventListener('click', claimDailyBonus);
+            copyReferralBtn.addEventListener('click', copyReferralLink);
             
             // Автоматический заработок
             setInterval(autoEarn, 100);
@@ -941,183 +1172,16 @@
             // Обновление интерфейса
             updateUI();
             updateProfilePage();
-        }
-        
-        // Копирование реферальной ссылки
-        function copyReferralLink() {
-            const referralLink = document.getElementById('referralLink');
-            referralLink.select();
-            document.execCommand('copy');
-            showNotification('Ссылка скопирована в буфер!');
-        }
-        
-        // Запуск игры при загрузке страницы
-        window.addEventListener('DOMContentLoaded', initGame);
-    </script>
-</body>
-</html>
-        // Загрузка состояния игры
-        function loadGame() {
-            const savedGame = localStorage.getItem('tapCoinGame');
-            if (savedGame) {
-                Object.assign(gameState, JSON.parse(savedGame));
-                updateUI();
+            
+            // Инициализация таблицы лидеров
+            if (gameState.leaderboard.length === 0) {
+                // Начальные данные для демонстрации
+                gameState.leaderboard = [
+                    { userId: 1, name: "Топ Игрок", coins: 15000 },
+                    { userId: 2, name: "Второй Игрок", coins: 12000 },
+                    { userId: 3, name: "Третий Игрок", coins: 10000 }
+                ];
             }
-            
-            // Инициализация Telegram
-            tg.ready();
-            tg.expand();
-        }
-        
-        // Сохранение состояния игры
-        function saveGame() {
-            localStorage.setItem('tapCoinGame', JSON.stringify(gameState));
-        }
-        
-        // Обновление интерфейса
-        function updateUI() {
-            coinsElement.textContent = Math.floor(gameState.coins);
-            coinsPerTapElement.textContent = gameState.coinsPerTap;
-            coinsPerSecElement.textContent = gameState.coinsPerSecond.toFixed(1);
-            
-            // Обновление стоимости улучшений
-            upgrade1Cost.textContent = `Стоимость: ${Math.ceil(gameState.upgrades.tapPower.cost)}`;
-            upgrade2Cost.textContent = `Стоимость: ${Math.ceil(gameState.upgrades.autoClicker.cost)}`;
-            upgrade3Cost.textContent = `Стоимость: ${Math.ceil(gameState.upgrades.goldenGlove.cost)}`;
-            
-            // Блокировка улучшений, если недостаточно монет
-            upgrade1.style.opacity = gameState.coins >= gameState.upgrades.tapPower.cost ? 1 : 0.6;
-            upgrade2.style.opacity = gameState.coins >= gameState.upgrades.autoClicker.cost ? 1 : 0.6;
-            upgrade3.style.opacity = gameState.coins >= gameState.upgrades.goldenGlove.cost ? 1 : 0.6;
-        }
-        
-        // Обработка тапа
-        function handleTap(event) {
-            // Добавление эффекта тапа
-            const tapEffect = document.createElement('div');
-            tapEffect.className = 'tap-effect';
-            tapEffect.style.left = (event.clientX - 25) + 'px';
-            tapEffect.style.top = (event.clientY - 25) + 'px';
-            document.body.appendChild(tapEffect);
-            
-            // Удаление эффекта после анимации
-            setTimeout(() => {
-                tapEffect.remove();
-            }, 600);
-            
-            // Добавление монет
-            gameState.coins += gameState.coinsPerTap;
-            
-            // Обновление интерфейса
-            updateUI();
-            saveGame();
-            
-            // Эффект монеты
-            animateCoin();
-        }
-        
-        // Анимация монеты при тапе
-        function animateCoin() {
-            const coin = document.querySelector('.coin');
-            coin.style.transform = 'scale(0.95)';
-            setTimeout(() => {
-                coin.style.transform = 'scale(1)';
-            }, 100);
-        }
-        
-        // Покупка улучшения
-        function buyUpgrade(upgradeKey) {
-            const upgrade = gameState.upgrades[upgradeKey];
-            
-            if (gameState.coins >= upgrade.cost) {
-                // Списание монет
-                gameState.coins -= upgrade.cost;
-                
-                // Применение улучшения
-                switch(upgradeKey) {
-                    case 'tapPower':
-                        gameState.coinsPerTap += upgrade.effect;
-                        upgrade.level++;
-                        upgrade.cost *= upgrade.costMultiplier;
-                        showNotification('Тап усилен! +1 монета за клик');
-                        break;
-                    case 'autoClicker':
-                        gameState.coinsPerSecond += upgrade.effect;
-                        upgrade.level++;
-                        upgrade.cost *= upgrade.costMultiplier;
-                        showNotification('Автокликер куплен! +0.5 монет/сек');
-                        break;
-                    case 'goldenGlove':
-                        if (!upgrade.purchased) {
-                            gameState.coinsPerTap *= upgrade.effect;
-                            upgrade.purchased = true;
-                            showNotification('Золотая перчатка! Доход за тап удвоен');
-                        }
-                        break;
-                }
-                
-                // Обновление интерфейса и сохранение
-                updateUI();
-                saveGame();
-            } else {
-                showNotification('Недостаточно монет!');
-            }
-        }
-        
-        // Показ уведомления
-        function showNotification(message) {
-            notification.textContent = message;
-            notification.style.display = 'block';
-            
-            setTimeout(() => {
-                notification.style.display = 'none';
-            }, 3000);
-        }
-        
-        // Функция автоматического заработка
-        function autoEarn() {
-            gameState.coins += gameState.coinsPerSecond / 10;
-            updateUI();
-            saveGame();
-        }
-        
-        // Обработка кнопки "Забрать монеты"
-       function claimCoins() {
-    if (window.Telegram && window.Telegram.WebApp) {
-        const tg = window.Telegram.WebApp;
-        
-        // Отправляем данные в бота
-        tg.sendData(JSON.stringify({
-            coins: Math.floor(gameState.coins),
-            userId: tg.initDataUnsafe.user?.id
-        }));
-        
-        // Закрываем Mini App
-        tg.close();
-    } else {
-        showNotification('Монеты сохранены локально!');
-    }
-}
-        
-        // Инициализация игры
-        function initGame() {
-            // Загрузка состояния
-            loadGame();
-            
-            // Настройка обработчиков событий
-            tapArea.addEventListener('click', handleTap);
-            
-            upgrade1.addEventListener('click', () => buyUpgrade('tapPower'));
-            upgrade2.addEventListener('click', () => buyUpgrade('autoClicker'));
-            upgrade3.addEventListener('click', () => buyUpgrade('goldenGlove'));
-            
-            claimButton.addEventListener('click', claimCoins);
-            
-            // Автоматический заработок каждые 0.1 секунды
-            setInterval(autoEarn, 100);
-            
-            // Обновление интерфейса
-            updateUI();
         }
         
         // Запуск игры при загрузке страницы
