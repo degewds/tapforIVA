@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>БОСС</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: Arial, sans-serif;
+        }
+        
+        .container {
+            position: relative;
+            text-align: center;
+        }
+        
+        .boss-text {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: gold;
+            font-size: 48px;
+            font-weight: bold;
+            text-shadow: 3px 3px 5px rgba(0,0,0,0.8);
+            z-index: 10;
+        }
+        
+        .photo {
+            max-width: 90vw;
+            max-height: 80vh;
+            border: 5px solid gold;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(255,215,0,0.5);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="boss-text">БОСС</div>
+        <img src="pec.jpg.jpg" alt="Босс" class="photo">
+    </div>
+</body>
+</html>
